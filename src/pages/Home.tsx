@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { motion } from "framer-motion";
 
 import { ChipotleStats } from "../components/ChipotleStats";
 import { TwitterStats } from "../components/TwitterStats";
@@ -14,16 +15,44 @@ function Loading() {
   );
 }
 
+const parent = {
+  show: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+const stat = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1 },
+};
+
 function Home() {
   return (
-    <div className="my-10 grid grid-cols-1 gap-5 sm:grid-cols-2">
-      <Suspense fallback={<Spinner />}>
-        <TwitterStats />
-        <YouTubeStats />
-        <ChipotleStats />
-        <InstagramStats />
-      </Suspense>
-    </div>
+    <Suspense fallback={<Spinner />}>
+      <motion.div
+        variants={parent}
+        initial="hidden"
+        animate="show"
+        className="my-10 grid grid-cols-1 gap-5 sm:grid-cols-2"
+      >
+        <motion.div variants={stat}>
+          <TwitterStats />
+        </motion.div>
+
+        <motion.div variants={stat}>
+          <YouTubeStats />
+        </motion.div>
+
+        <motion.div variants={stat}>
+          <ChipotleStats />
+        </motion.div>
+
+        <motion.div variants={stat}>
+          <InstagramStats />
+        </motion.div>
+      </motion.div>
+    </Suspense>
   );
 }
 
