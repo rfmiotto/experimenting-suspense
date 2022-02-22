@@ -3,32 +3,12 @@ import { useQuery } from "react-query";
 
 import ChipotleIcon from "./icons/ChipotleIcon";
 import api from "../services/api";
-import { Spinner } from "./Spinner";
 
 function ChipotleStats() {
-  const { isLoading, isError, data, error } = useQuery<any, Error>(
-    "chipotle",
-    async () => {
-      const response = await api.get("chipotle");
-      return response.data;
-    }
-  );
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center overflow-hidden rounded-lg bg-white px-10 py-6 shadow">
-        <Spinner />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div>
-        <h2>An error has occurred: ${error!.message}</h2>
-      </div>
-    );
-  }
+  const { data } = useQuery<any, Error>("chipotle", async () => {
+    const response = await api.get("chipotle");
+    return response.data;
+  });
 
   return (
     <div className="flex items-center overflow-hidden rounded-lg bg-white px-10 py-6 shadow">

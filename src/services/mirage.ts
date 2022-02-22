@@ -36,7 +36,7 @@ export function makeServer() {
             changeType: "decrease",
           };
         },
-        { timing: 1750 }
+        { timing: 1450 }
       );
 
       this.get(

@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { ChipotleStats } from "../components/ChipotleStats";
 import { TwitterStats } from "../components/TwitterStats";
 import { YouTubeStats } from "../components/YoutubeStats";
@@ -15,10 +17,12 @@ function Loading() {
 function Home() {
   return (
     <div className="my-10 grid grid-cols-1 gap-5 sm:grid-cols-2">
-      <TwitterStats />
-      <YouTubeStats />
-      <ChipotleStats />
-      <InstagramStats />
+      <Suspense fallback={<Spinner />}>
+        <TwitterStats />
+        <YouTubeStats />
+        <ChipotleStats />
+        <InstagramStats />
+      </Suspense>
     </div>
   );
 }

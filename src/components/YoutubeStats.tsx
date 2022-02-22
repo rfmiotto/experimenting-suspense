@@ -1,34 +1,14 @@
 import { ArrowSmDownIcon, ArrowSmUpIcon } from "@heroicons/react/solid";
 import { useQuery } from "react-query";
-import api from "../services/api";
 
 import YouTubeIcon from "./icons/YoutubeIcon";
-import { Spinner } from "./Spinner";
+import api from "../services/api";
 
 function YouTubeStats() {
-  const { isLoading, isError, data, error } = useQuery<any, Error>(
-    "youtube",
-    async () => {
-      const response = await api.get("youtube");
-      return response.data;
-    }
-  );
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center overflow-hidden rounded-lg bg-white px-10 py-6 shadow">
-        <Spinner />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div>
-        <h2>An error has occurred: ${error!.message}</h2>
-      </div>
-    );
-  }
+  const { data } = useQuery<any, Error>("youtube", async () => {
+    const response = await api.get("youtube");
+    return response.data;
+  });
 
   return (
     <div className="flex items-center overflow-hidden rounded-lg bg-white px-10 py-6 shadow">
