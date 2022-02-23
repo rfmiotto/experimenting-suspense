@@ -1,4 +1,4 @@
-// import { Suspense } from "react";
+import { Suspense } from "react";
 import { motion } from "framer-motion";
 
 import TwitterIcon from "../components/icons/TwitterIcon";
@@ -32,38 +32,44 @@ const stat = {
 
 function Home() {
   return (
-    // <Suspense fallback={<Loading />}>
     <motion.div
       variants={parent}
       initial="hidden"
       animate="show"
       className="my-10 grid grid-cols-1 gap-5 sm:grid-cols-2"
     >
-      <motion.div variants={stat}>
-        <Card>
-          <Stat Icon={TwitterIcon} label="Followers" endpoint="twitter" />
-        </Card>
-      </motion.div>
+      <Suspense fallback={<Loading />}>
+        <motion.div variants={stat}>
+          <Card>
+            <Stat Icon={TwitterIcon} label="Followers" endpoint="twitter" />
+          </Card>
+        </motion.div>
+      </Suspense>
 
-      <motion.div variants={stat}>
-        <Card>
-          <Stat Icon={YouTubeIcon} label="Subscribers" endpoint="youtube" />
-        </Card>
-      </motion.div>
+      <Suspense fallback={<Loading />}>
+        <motion.div variants={stat}>
+          <Card>
+            <Stat Icon={YouTubeIcon} label="Subscribers" endpoint="youtube" />
+          </Card>
+        </motion.div>
+      </Suspense>
 
-      <motion.div variants={stat}>
-        <Card>
-          <Stat Icon={ChipotleIcon} label="Burritos" endpoint="chipotle" />
-        </Card>
-      </motion.div>
+      <Suspense fallback={<Loading />}>
+        <motion.div variants={stat}>
+          <Card>
+            <Stat Icon={ChipotleIcon} label="Burritos" endpoint="chipotle" />
+          </Card>
+        </motion.div>
+      </Suspense>
 
-      <motion.div variants={stat}>
-        <Card>
-          <Stat Icon={InstagramIcon} label="Followers" endpoint="instagram" />
-        </Card>
-      </motion.div>
+      <Suspense fallback={<Loading />}>
+        <motion.div variants={stat}>
+          <Card>
+            <Stat Icon={InstagramIcon} label="Followers" endpoint="instagram" />
+          </Card>
+        </motion.div>
+      </Suspense>
     </motion.div>
-    // </Suspense>
   );
 }
 

@@ -3,7 +3,6 @@ import { ArrowSmDownIcon, ArrowSmUpIcon } from "@heroicons/react/solid";
 import { useQuery } from "react-query";
 
 import api from "../services/api";
-import { Spinner } from "./Spinner";
 
 type StatProps = {
   Icon: ElementType;
@@ -12,22 +11,14 @@ type StatProps = {
 };
 
 function Stat({ Icon, label, endpoint }: StatProps) {
-  const { isLoading, data } = useQuery<any, Error>(
+  const { data } = useQuery<any, Error>(
     endpoint,
     async () => {
       const response = await api.get(endpoint);
       return response.data;
     },
-    { suspense: false }
+    { suspense: true }
   );
-
-  if (isLoading) {
-    return (
-      <div className="flex h-28 w-72 items-center justify-center rounded-lg bg-white shadow">
-        <Spinner />;
-      </div>
-    );
-  }
 
   return (
     <>
