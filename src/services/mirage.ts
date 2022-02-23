@@ -9,13 +9,13 @@ export function makeServer() {
 
       this.get("/twitter", () => {
         // force an error
-        // return new Response(500);
+        return new Response(500);
 
-        return {
-          stat: "71,897",
-          change: "122",
-          changeType: "increase",
-        };
+        // return {
+        //   stat: "71,897",
+        //   change: "122",
+        //   changeType: "increase",
+        // };
       });
 
       this.get(

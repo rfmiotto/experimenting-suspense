@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { motion } from "framer-motion";
+import { ErrorBoundary } from "react-error-boundary";
 
 import TwitterIcon from "../components/icons/TwitterIcon";
 import YouTubeIcon from "../components/icons/YoutubeIcon";
@@ -8,11 +9,20 @@ import InstagramIcon from "../components/icons/InstagramIcon";
 import { Card } from "../components/Card";
 import { Stat } from "../components/Stat";
 import { Spinner } from "../components/Spinner";
+import { Error } from "../components/Error";
 
 function Loading() {
   return (
     <Card>
       <Spinner />
+    </Card>
+  );
+}
+
+function ErrorCard() {
+  return (
+    <Card>
+      <Error>Could not fetch data</Error>
     </Card>
   );
 }
@@ -38,37 +48,49 @@ function Home() {
       animate="show"
       className="my-10 grid grid-cols-1 gap-5 sm:grid-cols-2"
     >
-      <Suspense fallback={<Loading />}>
-        <motion.div variants={stat}>
-          <Card>
-            <Stat Icon={TwitterIcon} label="Followers" endpoint="twitter" />
-          </Card>
-        </motion.div>
-      </Suspense>
+      <ErrorBoundary fallback={<ErrorCard />}>
+        <Suspense fallback={<Loading />}>
+          <motion.div variants={stat}>
+            <Card>
+              <Stat Icon={TwitterIcon} label="Followers" endpoint="twitter" />
+            </Card>
+          </motion.div>
+        </Suspense>
+      </ErrorBoundary>
 
-      <Suspense fallback={<Loading />}>
-        <motion.div variants={stat}>
-          <Card>
-            <Stat Icon={YouTubeIcon} label="Subscribers" endpoint="youtube" />
-          </Card>
-        </motion.div>
-      </Suspense>
+      <ErrorBoundary fallback={<ErrorCard />}>
+        <Suspense fallback={<Loading />}>
+          <motion.div variants={stat}>
+            <Card>
+              <Stat Icon={YouTubeIcon} label="Subscribers" endpoint="youtube" />
+            </Card>
+          </motion.div>
+        </Suspense>
+      </ErrorBoundary>
 
-      <Suspense fallback={<Loading />}>
-        <motion.div variants={stat}>
-          <Card>
-            <Stat Icon={ChipotleIcon} label="Burritos" endpoint="chipotle" />
-          </Card>
-        </motion.div>
-      </Suspense>
+      <ErrorBoundary fallback={<ErrorCard />}>
+        <Suspense fallback={<Loading />}>
+          <motion.div variants={stat}>
+            <Card>
+              <Stat Icon={ChipotleIcon} label="Burritos" endpoint="chipotle" />
+            </Card>
+          </motion.div>
+        </Suspense>
+      </ErrorBoundary>
 
-      <Suspense fallback={<Loading />}>
-        <motion.div variants={stat}>
-          <Card>
-            <Stat Icon={InstagramIcon} label="Followers" endpoint="instagram" />
-          </Card>
-        </motion.div>
-      </Suspense>
+      <ErrorBoundary fallback={<ErrorCard />}>
+        <Suspense fallback={<Loading />}>
+          <motion.div variants={stat}>
+            <Card>
+              <Stat
+                Icon={InstagramIcon}
+                label="Followers"
+                endpoint="instagram"
+              />
+            </Card>
+          </motion.div>
+        </Suspense>
+      </ErrorBoundary>
     </motion.div>
   );
 }
