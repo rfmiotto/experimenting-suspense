@@ -1,4 +1,4 @@
-import { createServer } from "miragejs";
+import { createServer, Response } from "miragejs";
 
 export function makeServer() {
   const server = createServer({
@@ -8,6 +8,9 @@ export function makeServer() {
       this.timing = 750;
 
       this.get("/twitter", () => {
+        // force an error
+        // return new Response(500);
+
         return {
           stat: "71,897",
           change: "122",

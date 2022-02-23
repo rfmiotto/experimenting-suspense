@@ -1,20 +1,39 @@
+import { ElementType } from "react";
 import { ArrowSmDownIcon, ArrowSmUpIcon } from "@heroicons/react/solid";
 import { useQuery } from "react-query";
 
-import TwitterIcon from "./icons/TwitterIcon";
 import api from "../services/api";
+import { Spinner } from "./Spinner";
 
-function TwitterStats() {
-  const { data } = useQuery<any, Error>("twitter", async () => {
-    const response = await api.get("twitter");
-    return response.data;
-  });
+type StatProps = {
+  Icon: ElementType;
+  label: string;
+  endpoint: string;
+};
+
+function Stat({ Icon, label, endpoint }: StatProps) {
+  const { isLoading, data } = useQuery<any, Error>(
+    endpoint,
+    async () => {
+      const response = await api.get(endpoint);
+      return response.data;
+    },
+    { suspense: false }
+  );
+
+  if (isLoading) {
+    return (
+      <div className="flex h-28 w-72 items-center justify-center rounded-lg bg-white shadow">
+        <Spinner />;
+      </div>
+    );
+  }
 
   return (
-    <div className="flex items-center overflow-hidden rounded-lg bg-white px-10 py-6 shadow">
-      <TwitterIcon className="h-10 w-10 shrink-0 text-[#1DA1F2]" />
+    <>
+      <Icon className="h-10 w-10 shrink-0 text-[#1DA1F2]" />
       <div className="pl-5">
-        <p className="truncate text-sm font-medium text-gray-500">Followers</p>
+        <p className="truncate text-sm font-medium text-gray-500">{label}</p>
         <div className="flex items-baseline">
           <p className="text-2xl font-semibold text-gray-900">{data.stat}</p>
           <p
@@ -31,8 +50,8 @@ function TwitterStats() {
           </p>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
-export { TwitterStats };
+export { Stat };

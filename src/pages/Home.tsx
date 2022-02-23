@@ -1,17 +1,19 @@
-import { Suspense } from "react";
+// import { Suspense } from "react";
 import { motion } from "framer-motion";
 
-import { ChipotleStats } from "../components/ChipotleStats";
-import { TwitterStats } from "../components/TwitterStats";
-import { YouTubeStats } from "../components/YoutubeStats";
-import { InstagramStats } from "../components/InstagramStats";
+import TwitterIcon from "../components/icons/TwitterIcon";
+import YouTubeIcon from "../components/icons/YoutubeIcon";
+import ChipotleIcon from "../components/icons/ChipotleIcon";
+import InstagramIcon from "../components/icons/InstagramIcon";
+import { Card } from "../components/Card";
+import { Stat } from "../components/Stat";
 import { Spinner } from "../components/Spinner";
 
 function Loading() {
   return (
-    <div className="flex items-center justify-center">
+    <Card>
       <Spinner />
-    </div>
+    </Card>
   );
 }
 
@@ -22,6 +24,7 @@ const parent = {
     },
   },
 };
+
 const stat = {
   hidden: { opacity: 0 },
   show: { opacity: 1 },
@@ -29,30 +32,38 @@ const stat = {
 
 function Home() {
   return (
-    <Suspense fallback={<Spinner />}>
-      <motion.div
-        variants={parent}
-        initial="hidden"
-        animate="show"
-        className="my-10 grid grid-cols-1 gap-5 sm:grid-cols-2"
-      >
-        <motion.div variants={stat}>
-          <TwitterStats />
-        </motion.div>
-
-        <motion.div variants={stat}>
-          <YouTubeStats />
-        </motion.div>
-
-        <motion.div variants={stat}>
-          <ChipotleStats />
-        </motion.div>
-
-        <motion.div variants={stat}>
-          <InstagramStats />
-        </motion.div>
+    // <Suspense fallback={<Loading />}>
+    <motion.div
+      variants={parent}
+      initial="hidden"
+      animate="show"
+      className="my-10 grid grid-cols-1 gap-5 sm:grid-cols-2"
+    >
+      <motion.div variants={stat}>
+        <Card>
+          <Stat Icon={TwitterIcon} label="Followers" endpoint="twitter" />
+        </Card>
       </motion.div>
-    </Suspense>
+
+      <motion.div variants={stat}>
+        <Card>
+          <Stat Icon={YouTubeIcon} label="Subscribers" endpoint="youtube" />
+        </Card>
+      </motion.div>
+
+      <motion.div variants={stat}>
+        <Card>
+          <Stat Icon={ChipotleIcon} label="Burritos" endpoint="chipotle" />
+        </Card>
+      </motion.div>
+
+      <motion.div variants={stat}>
+        <Card>
+          <Stat Icon={InstagramIcon} label="Followers" endpoint="instagram" />
+        </Card>
+      </motion.div>
+    </motion.div>
+    // </Suspense>
   );
 }
 
