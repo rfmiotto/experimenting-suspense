@@ -6,6 +6,7 @@ import {
   signInWithEmailAndPassword,
   User,
 } from "firebase/auth";
+import { suspend } from "suspend-react";
 
 import { firebaseApp } from "../services/firebase";
 import { Dashboard } from "../components/Dashboard";
@@ -27,18 +28,26 @@ const auth = getAuth(firebaseApp);
 // as we will see later on, we lost the ability to have our app update over time
 // with this approach.
 let user: User | null;
-const promise = new Promise<void>((resolve) => {
-  const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-    user = firebaseUser ?? ({ email: "Need to login" } as User);
-    unsubscribe();
-    resolve();
+async function getInitialAuthState() {
+  return new Promise<void>((resolve) => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      user = firebaseUser ?? ({ email: "Need to login" } as User);
+      unsubscribe();
+      resolve();
+    });
   });
-});
+}
 
 function Home() {
-  if (!user) {
-    throw promise;
-  }
+  // `suspend` works as follows: the first parameter is an async function that
+  // returns a promise. So if we can pass in some async function to `suspend`,
+  // then this library will take care of throwing the promise and triggering
+  // suspense for us. We have already defined a promise before, so all we have to
+  // do is return it. As a second parameter, we have an array of keys that is
+  // used to keep track of these different promises in a global cache. For our
+  // purposes, we can use the name "initialAuthState" as a key and that will be
+  // enough to identify this promise for us.
+  suspend(getInitialAuthState, ["initialAuthState"]);
 
   async function handleSignIn(): Promise<void> {
     await signInWithEmailAndPassword(auth, "test@email.com", "123456");
