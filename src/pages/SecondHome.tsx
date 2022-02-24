@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import {
   getAuth,
@@ -15,10 +15,28 @@ import { Spinner } from "../components/Spinner";
 
 const auth = getAuth(firebaseApp);
 
-// Instead of using this `let user: User | null;` variable in the module scope,
-// suspend-react actually returns whatever value our promise resolves with. So,
-// if we just pass in the `firebaseUser` to `resolve` and get rid of this `let user`,
-// we can say: `const user = suspend(getInitialAuthState, ["initialAuthState"]);`
+// In previous commits, we wrapped Firebase's `onAuthStateChanged` callback in
+// a promise so that we could use it to suspend our application with `suspend`.
+// But, by pulling the state out of the component into module scope and using
+//  suspense to trigger the re-render, we lost the ability to update our app
+// over time.
+
+// The easiest way to solve this is to bring back the useEffect and useState
+// in our component. In this commit, we implement this solution.
+
+// This approach definitely solves our problem and we get a reactive app again.
+// But, it was really interesting where we left off in the last commit, with
+// all the observer code living in module scope. It is totally fine to leave the
+// onAuthStateChanged in render, in an effect, but it just makes the code a
+// little bit hard to follow. So ideally, we want to bring the code inside the
+// useEffect out here in the module scope as well. How can we achieve this? We
+// can't call `setCurrentUser` in module scope... This is where a state management
+// library come in. We have Redux, Recoil, Zustand, Valtio, etc. These give us
+// APIs to create and update state here at module scope, outside of render and
+// then give us a bridge that we can use to read from that changing state from
+// inside our components. Here, we are going to use Valtio because it is slim
+// down and has a really nice API (see next commit).
+
 async function getInitialAuthState() {
   return new Promise<User | null>((resolve) => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -29,49 +47,18 @@ async function getInitialAuthState() {
 }
 
 function Home() {
-  // `suspend` works as follows: the first parameter is an async function that
-  // returns a promise. So if we can pass in some async function to `suspend`,
-  // then this library will take care of throwing the promise and triggering
-  // suspense for us. We have already defined a promise before, so all we have to
-  // do is return it. As a second parameter, we have an array of keys that is
-  // used to keep track of these different promises in a global cache. For our
-  // purposes, we can use the name "initialAuthState" as a key and that will be
-  // enough to identify this promise for us.
-  const user = suspend(getInitialAuthState, ["initialAuthState"]);
+  const initialCurrentUser = suspend(getInitialAuthState, ["initialAuthState"]);
 
-  // Notice that we managed to use Suspense and remove all the async code from
-  // this component Home. We have hidden all all the third-party async code outside
-  // of our component's rendering cycle up here in this `getInitialAuthState`
-  // function. All we did was to wrap a Promise and resolve it inside of a callback.
-  // Now, Home component is super slim and synchronous. When React hits the
-  // `suspend` call above, since the getInitialAuthState is an appending state,
-  // it is going to stop execution. React is gonna wait for that promise to
-  // resolve and then try to render the component again. The second time it
-  // renders, the `suspend` call is going to resolve synchronously with the value
-  // of our user. React will be able to pass this line and render the code below.
-  // Now we don't have a loading state in the component anymore and we are able
-  // to handle it in our parent component, allowing us to have a suspense boundary
-  // in our tree in case we have more components and want them to behave in a
-  // specific manner.
-  // Also notice that Firebase API doesn’t return a promise! So our async function
-  // needs to return the Firebase call wrapped in a promise, but that one would
-  // resolve immediately. To make it possible to resolve it immediately, we need
-  // to make our Promise such that we can manually call resolve() within the
-  //  Firebase callback.
+  const [currentUser, setCurrentUser] = useState(initialCurrentUser);
 
-  // The objective of this lesson is to understand the power of promises with
-  // Suspense. Now, we can turn any async code or async work that needs to be
-  // done into an async function that can then be used to suspend your react
-  // component.
-
-  // So far with our solution, you might have noticed that we lost something
-  // from our original implementation with useEffect. If we change the state
-  // of the user (for example, signout), our UI doesn't update. If we refresh,
-  // we do see the correct UI. We are going to cover this issue in the next
-  // commit.
+  useEffect(() => {
+    return onAuthStateChanged(auth, (firebaseUser) => {
+      setCurrentUser(firebaseUser);
+    });
+  }, []);
 
   async function handleSignIn(): Promise<void> {
-    await signInWithEmailAndPassword(auth, "test@email.com", "123456");
+    await signInWithEmailAndPassword(auth, "test2@email.com", "123456");
   }
 
   async function handleSignOut(): Promise<void> {
@@ -98,7 +85,7 @@ function Home() {
           </button>
         </div>
 
-        {user ? <Dashboard user={user} /> : <SignIn />}
+        {currentUser ? <Dashboard user={currentUser} /> : <SignIn />}
       </div>
     </div>
   );
