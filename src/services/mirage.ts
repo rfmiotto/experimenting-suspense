@@ -53,6 +53,8 @@ export function makeServer() {
         },
         { timing: 750 }
       );
+
+      this.passthrough("https://identitytoolkit.googleapis.com/**");
     },
   });
 

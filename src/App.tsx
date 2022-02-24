@@ -4,6 +4,7 @@ import { QueryClientProvider } from "react-query";
 import { makeServer } from "./services/mirage";
 import { queryClient } from "./services/queryClient";
 import { Routes } from "./routes";
+import "./services/firebase";
 
 if (import.meta.env.DEV) {
   makeServer();
