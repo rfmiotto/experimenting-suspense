@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense } from "react";
+import { Suspense } from "react";
 
 import {
   getAuth,
@@ -14,48 +14,28 @@ import { Spinner } from "../components/Spinner";
 
 const auth = getAuth(firebaseApp);
 
-let user: User;
+// So here is our solution: we now have our onAuthStateChanged code inside the
+// promise and we resolve it in the onAuthStateChanged callback function.
+// In order to be good citizens, let's get the unsubscribe function that the
+// onAuthStateChanged function returns (you can name the variable as you want)
+// and execute it after resolving the promise. We do this so the onAuthStateChanged
+// code does not keep running over and over again (since it is an event listener).
+// Despite this solution works, it is not a very scalable or composable architecture.
+// Fortunately, there is a library called "suspend-react" that helps us to write
+// a better code.
+// OBS: if you are trying to run this code, it may not work as expected because,
+// as we will see later on, we lost the ability to have our app update over time
+// with this approach.
+let user: User | null;
 const promise = new Promise<void>((resolve) => {
-  setTimeout(() => {
-    user = { email: "test@email.com" } as User;
+  const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    user = firebaseUser ?? ({ email: "Need to login" } as User);
+    unsubscribe();
     resolve();
-  }, 2000);
+  });
 });
 
 function Home() {
-  // const [user, setUser] = useState<User | null>(null);
-
-  // This useEffect causes some weird behavior. When we refresh the page, we need
-  // to load the data from Firebase, but this `onAuthStateChanged` is running
-  // inside of a useEffect after the mount.
-  // How can we fix this? We could add some new states to handle this behavior,
-  // but ideally, we would be able to use Suspense. This is a perfect candidate
-  // for it: the Home component is not ready to render while Firebase is fetching
-  // and we would be able to tell its parent to suspend the application.
-  // But, there is no clear way to do this. All we have is this `onAuthStateChanged`
-  // observer that fires a callback. So, we need some sort of bridge in order to
-  // use Suspense.
-
-  // useEffect(() => {
-  //   onAuthStateChanged(auth, (firebaseUser) => {
-  //     setUser(firebaseUser);
-  //   });
-  // }, []);
-
-  // The way Suspense works, we need to throw a promise to render its fallback
-  // component, which in our case is a Spinner. In order to stop the spinner, we
-  // need to resolve the promise. To mimic that effect, I'm going to use a setTimeout.
-  // But this creates an interesting behavior: since our user still does not
-  // exist, React keeps throwing this promise trying to render this.
-  // Notice that the console log will start print "rendering" like crazy after
-  // the initial timeout. So we need a way to update user. But, we can't update
-  // the user value within our promise using setUser because we don't have access
-  // to this. For now, let's create a user in the module scope and then update
-  // its value when we resolve the promise. But, we don't want to use this dummy
-  //  timeout function. We wanna actually use our onAuthStateChanged code. So
-  // let's do this...
-  console.log("rendering");
-
   if (!user) {
     throw promise;
   }
@@ -70,10 +50,6 @@ function Home() {
 
   return (
     <div className="flex flex-col">
-      <p className="mb-10 max-w-lg">
-        In this example, after signing in, you will observe a weird behavior
-        when refreshing the page
-      </p>
       <div className="m-10 flex flex-col items-center rounded-xl bg-white p-4">
         <div className="mb-4 flex w-52 justify-between">
           <button
