@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 
 import {
   getAuth,
@@ -6,7 +6,6 @@ import {
   signInWithEmailAndPassword,
   User,
 } from "firebase/auth";
-import { suspend } from "suspend-react";
 import { proxy, useSnapshot } from "valtio";
 
 import { firebaseApp } from "../services/firebase";
@@ -16,39 +15,36 @@ import { Spinner } from "../components/Spinner";
 
 const auth = getAuth(firebaseApp);
 
-// async function getInitialAuthState() {
-//   return new Promise<User | null>((resolve) => {
-//     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-//       resolve(firebaseUser);
-//       unsubscribe();
-//     });
-//   });
-// }
+// Although we are not using the function `getInitialAuthState` anymore, we have
+// declared a Promise in there that resolves once the callback runs for the first
+// time. So let's use this Promise and name it `initialCurrentUser`.
 
-// In order to create and update state in our module scope, we are going to use
-// valtio. We start by just creating a new state using proxy method, that takes
-// an initial object as input. We will have one property called `currentUser`
-// that will be initialized as `null`. We also bring back our observer `onAuthStateChanged`
-// right below our state, and instead of calling `setCurrentUser`, we will just
-// say that `state.currentUser = firebaseUser`. Now, in our Home component, we
-// use `useSnapshot` from valtio to catch changes in our state. From that state,
-// we will grab the currentUser property from.
-// For now, let's comment out the `suspend` call. Notice that after these changes
-// we are back to the original scenario in which our component is reactive but
-// it still have that undesired behavior when we refresh the page, where we get
-// a flash of content when `currentUser` is null. Basically, all we did was to
-//  move the logic from the component (via useState and useEffect) into module
-// scope (via valtio). The useSnapshot hook makes our component reactive again
-// even if the state lives outside of the component.
-// Now, to solve our "flash problem" we need to get suspense back in the component.
-// Let's see how to do that in the next commit...
+const initialCurrentUser = new Promise<User | null>((resolve) => {
+  const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    resolve(firebaseUser);
+    unsubscribe();
+  });
+});
+
+// Now, instead of using `null` as an initial state for our `currentUser`, let's
+// use the `initialCurrentUser` defined above, which is a promise. Just by doing
+// so, our app is suspending again. That is a really cool feature from valtio:
+// if you try to access a property of your state that happens to be a promise,
+// valtio is gonna go ahead and throw it. It can do that because of this "proxy"
+// setup, which is going to suspend our application. And now, our application is
+// working as expected again, but without using useEffect or useState and keeping
+// the state globally, in module scope.
+// But, as you can see, this file contains a lot of responsibilities. We have 2
+// observers that are interacting with library code (onAuthStateChanged) and this
+// part is making our code a little bit confusing and hard to follow. In the
+// next commit, we are going to refactor this code...
 
 interface proxyType {
-  currentUser: User | null;
+  currentUser: User | null | Promise<User | null>;
 }
 
 const state = proxy<proxyType>({
-  currentUser: null,
+  currentUser: initialCurrentUser,
 });
 
 onAuthStateChanged(auth, (firebaseUser) => {
@@ -56,8 +52,6 @@ onAuthStateChanged(auth, (firebaseUser) => {
 });
 
 function Home() {
-  // const initialCurrentUser = suspend(getInitialAuthState, ["initialAuthState"]);
-
   const { currentUser } = useSnapshot(state) as proxyType;
 
   async function handleSignIn(): Promise<void> {
@@ -88,7 +82,11 @@ function Home() {
           </button>
         </div>
 
-        {currentUser ? <Dashboard user={currentUser} /> : <SignIn />}
+        {currentUser ? (
+          <Dashboard user={currentUser as unknown as User} />
+        ) : (
+          <SignIn />
+        )}
       </div>
     </div>
   );
