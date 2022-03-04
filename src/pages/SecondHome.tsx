@@ -7,6 +7,7 @@ import {
   User,
 } from "firebase/auth";
 import { suspend } from "suspend-react";
+import { proxy, useSnapshot } from "valtio";
 
 import { firebaseApp } from "../services/firebase";
 import { Dashboard } from "../components/Dashboard";
@@ -15,47 +16,49 @@ import { Spinner } from "../components/Spinner";
 
 const auth = getAuth(firebaseApp);
 
-// In previous commits, we wrapped Firebase's `onAuthStateChanged` callback in
-// a promise so that we could use it to suspend our application with `suspend`.
-// But, by pulling the state out of the component into module scope and using
-//  suspense to trigger the re-render, we lost the ability to update our app
-// over time.
+// async function getInitialAuthState() {
+//   return new Promise<User | null>((resolve) => {
+//     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+//       resolve(firebaseUser);
+//       unsubscribe();
+//     });
+//   });
+// }
 
-// The easiest way to solve this is to bring back the useEffect and useState
-// in our component. In this commit, we implement this solution.
+// In order to create and update state in our module scope, we are going to use
+// valtio. We start by just creating a new state using proxy method, that takes
+// an initial object as input. We will have one property called `currentUser`
+// that will be initialized as `null`. We also bring back our observer `onAuthStateChanged`
+// right below our state, and instead of calling `setCurrentUser`, we will just
+// say that `state.currentUser = firebaseUser`. Now, in our Home component, we
+// use `useSnapshot` from valtio to catch changes in our state. From that state,
+// we will grab the currentUser property from.
+// For now, let's comment out the `suspend` call. Notice that after these changes
+// we are back to the original scenario in which our component is reactive but
+// it still have that undesired behavior when we refresh the page, where we get
+// a flash of content when `currentUser` is null. Basically, all we did was to
+//  move the logic from the component (via useState and useEffect) into module
+// scope (via valtio). The useSnapshot hook makes our component reactive again
+// even if the state lives outside of the component.
+// Now, to solve our "flash problem" we need to get suspense back in the component.
+// Let's see how to do that in the next commit...
 
-// This approach definitely solves our problem and we get a reactive app again.
-// But, it was really interesting where we left off in the last commit, with
-// all the observer code living in module scope. It is totally fine to leave the
-// onAuthStateChanged in render, in an effect, but it just makes the code a
-// little bit hard to follow. So ideally, we want to bring the code inside the
-// useEffect out here in the module scope as well. How can we achieve this? We
-// can't call `setCurrentUser` in module scope... This is where a state management
-// library come in. We have Redux, Recoil, Zustand, Valtio, etc. These give us
-// APIs to create and update state here at module scope, outside of render and
-// then give us a bridge that we can use to read from that changing state from
-// inside our components. Here, we are going to use Valtio because it is slim
-// down and has a really nice API (see next commit).
-
-async function getInitialAuthState() {
-  return new Promise<User | null>((resolve) => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      resolve(firebaseUser);
-      unsubscribe();
-    });
-  });
+interface proxyType {
+  currentUser: User | null;
 }
 
+const state = proxy<proxyType>({
+  currentUser: null,
+});
+
+onAuthStateChanged(auth, (firebaseUser) => {
+  state.currentUser = firebaseUser;
+});
+
 function Home() {
-  const initialCurrentUser = suspend(getInitialAuthState, ["initialAuthState"]);
+  // const initialCurrentUser = suspend(getInitialAuthState, ["initialAuthState"]);
 
-  const [currentUser, setCurrentUser] = useState(initialCurrentUser);
-
-  useEffect(() => {
-    return onAuthStateChanged(auth, (firebaseUser) => {
-      setCurrentUser(firebaseUser);
-    });
-  }, []);
+  const { currentUser } = useSnapshot(state) as proxyType;
 
   async function handleSignIn(): Promise<void> {
     await signInWithEmailAndPassword(auth, "test2@email.com", "123456");
