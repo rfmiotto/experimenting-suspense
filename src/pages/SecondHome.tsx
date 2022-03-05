@@ -15,29 +15,19 @@ import { Spinner } from "../components/Spinner";
 
 const auth = getAuth(firebaseApp);
 
-// Although we are not using the function `getInitialAuthState` anymore, we have
-// declared a Promise in there that resolves once the callback runs for the first
-// time. So let's use this Promise and name it `initialCurrentUser`.
+// The first thing we are going to do in this refactor is to eliminate the duplicate
+// of onAuthStateChanged. In order to do so, let's use a little trick to give us
+// the ability to call resolve from the module scope. We start off by removing
+// the content from inside initialCurrentUser and moving `resolve` to the global
+// scope. Then we execute this function inside the `onAuthStateChanged` function.
+// With that, we have only one observer for the lifetime of the application. We
+// never unsubscribe. All we do is to resolve the promise the first time and
+// updating the state value over time.
 
-const initialCurrentUser = new Promise<User | null>((resolve) => {
-  const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-    resolve(firebaseUser);
-    unsubscribe();
-  });
+let resolve: any;
+const initialCurrentUser = new Promise<User | null>((r) => {
+  resolve = r;
 });
-
-// Now, instead of using `null` as an initial state for our `currentUser`, let's
-// use the `initialCurrentUser` defined above, which is a promise. Just by doing
-// so, our app is suspending again. That is a really cool feature from valtio:
-// if you try to access a property of your state that happens to be a promise,
-// valtio is gonna go ahead and throw it. It can do that because of this "proxy"
-// setup, which is going to suspend our application. And now, our application is
-// working as expected again, but without using useEffect or useState and keeping
-// the state globally, in module scope.
-// But, as you can see, this file contains a lot of responsibilities. We have 2
-// observers that are interacting with library code (onAuthStateChanged) and this
-// part is making our code a little bit confusing and hard to follow. In the
-// next commit, we are going to refactor this code...
 
 interface proxyType {
   currentUser: User | null | Promise<User | null>;
@@ -48,6 +38,7 @@ const state = proxy<proxyType>({
 });
 
 onAuthStateChanged(auth, (firebaseUser) => {
+  resolve();
   state.currentUser = firebaseUser;
 });
 
