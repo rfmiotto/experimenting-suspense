@@ -24,6 +24,21 @@ const auth = getAuth(firebaseApp);
 // never unsubscribe. All we do is to resolve the promise the first time and
 // updating the state value over time.
 
+// valtio also makes it easy to do derived state. So, here we want to create a
+// custom hook (useAuth) that will have a status, which is a derived property.
+// Here, we are using a plain javascript getter for the status property, which
+// is going to return some data base on the value of our state (currentUser) --
+// that is why it is a derived state. So, we can look at `this.currentUser`, where
+// `this` refers to the current value of the state, and if it is a Promise, we
+// know that it is fetching the initialCurrentUser, and the status will be `unknown`.
+// Otherwise, if `this.currentUser === null`, the status will be unauthenticated,
+// otherwise, it will be authenticated. Try opening the browser devtools to see
+// how the logs change when you sign in and out.
+// As you can see, valtio gives you a lot of flexibility to create derived states
+// that still updates. And still, we have a singleton module state that all
+// components can reference to, so all components are referencing the same thing.
+// Okay, in the next commit we will extract this logic into a useAuth hook.
+
 let resolve: any;
 const initialCurrentUser = new Promise<User | null>((r) => {
   resolve = r;
@@ -31,10 +46,18 @@ const initialCurrentUser = new Promise<User | null>((r) => {
 
 interface proxyType {
   currentUser: User | null | Promise<User | null>;
+  status: "unknown" | "unauthenticated" | "authenticated";
 }
 
 const state = proxy<proxyType>({
   currentUser: initialCurrentUser,
+  get status() {
+    return this.currentUser instanceof Promise
+      ? "unknown"
+      : this.currentUser === null
+      ? "unauthenticated"
+      : "authenticated";
+  },
 });
 
 onAuthStateChanged(auth, (firebaseUser) => {
@@ -43,7 +66,8 @@ onAuthStateChanged(auth, (firebaseUser) => {
 });
 
 function Home() {
-  const { currentUser } = useSnapshot(state) as proxyType;
+  const { currentUser, status } = useSnapshot(state) as proxyType;
+  console.log(status);
 
   async function handleSignIn(): Promise<void> {
     await signInWithEmailAndPassword(auth, "test2@email.com", "123456");
